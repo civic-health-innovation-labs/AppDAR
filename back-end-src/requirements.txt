@@ -1,0 +1,9 @@
+# For back-end and authentication
+fastapi==0.104.1
+uvicorn==0.24.0.post1
+SQLAlchemy==2.0.23
+pyodbc==5.0.1
+fastapi-azure-auth==4.3.0
+# For data factory:
+azure-mgmt-datafactory==4.0.0
+azure-cli==2.55.0

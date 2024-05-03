@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  pulumi:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    environment:
+      - AZURE_TENANT_ID=TODO
+      - PULUMI_BACKEND_URL=azblob://TODO?storage_account=TODO
+      - PULUMI_CONFIG_PASSPHRASE=TODO
+    volumes:
+      - ../provisioning:/src/

@@ -1,0 +1,5 @@
+infrastructure/dbdata/*
+__pycache__/
+*__pycache__/
+.env.*
+devel_*

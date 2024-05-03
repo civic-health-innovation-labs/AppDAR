@@ -1,0 +1,102 @@
+name: Building and deploying image into the Azure Container Registry
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+        description: "Like 'prod' or 'local' or 'test' (matching to /config/__init__.py options)"
+    secrets:
+      ACR_LOGIN_SERVER:
+        description: "Login server field in the Azure Container Registry: SOMETHING.azurecr.io"
+        required: true
+      ACR_IMAGE_FULL_TAG:
+        # In the following, use TAG_NAME as 'latest' and LGN_SER as the ACR_LOGIN_SERVER value.
+        #   If relevant, also use the IMAGE_NAME equivalent to FlowEHR one.
+        description: "Full tag for the image, follow: LGN_SER.azurecr.io/IMAGE_NAME:TAG_NAME"
+        required: true
+      ACR_USERNAME:
+        description: "Username for admin user to login to the Azure Container Registry"
+        required: true
+      ACR_PASSWORD:
+        description: "Password for admin user to login to the Azure Container Registry"
+        required: true
+      LOCAL_IMAGE_NAME:
+        description: "Name of the local Docker image (how it is build), typically just webapp"
+        required: true
+      AAD_APPLICATION_CLIENT_ID:
+        description: "A value of 'Application (client) ID' in 'Azure AD B2C' app"
+        required: true
+      AAD_TENANT_ID:
+        description: "Standard Tenant UUID (find in 'Tenant' in Azure)."
+        required: true
+      AAD_APPLICATION_ID_URI_SCOPES:
+        description: "You can find this in 'Expose an API' option of APP (in section 'scopes')"
+        required: true
+      MSSQL_HOST:
+        description: "URL of the Microsoft SQL Server host"
+        required: true
+      MSSQL_USER:
+        description: "Username for the MS SQL Server connection"
+        required: true
+      MSSQL_PASS:
+        description: "Password for the MS SQL Server connection"
+        required: true
+      MSSQL_PORT:
+        description: "Port of the MS SQL Server - typically 1433"
+        required: true
+      MSSQL_DATABASE:
+        description: "Name of the database inside the MS SQL Server"
+        required: true
+      CORS_ORIGINS:  # To pass CORS list use the format: ["URL_1", "URL_2", ...]
+        description: "CORS origin list for the platform"
+        required: true
+      ADF_SUBSCRIPTION_ID:
+        description: "Subscription ID (UUID) where ADF resource is located"
+        required: true
+      ADF_RESOURCE_GROUP:
+        description: "Resource group where ADF resource is located"
+        required: true
+      ADF_DATA_FACTORY:
+        description: "Name of the resource (ADF resource name)"
+        required: true
+      ADF_PIPELINE_NAME:
+        description: "Name of the pipeline inside ADF that does dataset provisioning"
+        required: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest  # Using the latest ubuntu for all operations
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checking out repository
+        uses: actions/checkout@v3
+
+      - name: Seting up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Building and deploying the web app
+        env:
+          DOCKER_BUILDKIT: 1
+          # Variables as required by the list (.env.sample - includes description)
+          ENVIRONMENT: ${{ inputs.environment }}
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          ACR_IMAGE_FULL_TAG: ${{ secrets.ACR_IMAGE_FULL_TAG }}
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          LOCAL_IMAGE_NAME: ${{ secrets.LOCAL_IMAGE_NAME }}
+          AAD_APPLICATION_CLIENT_ID: ${{ secrets.AAD_APPLICATION_CLIENT_ID }}
+          AAD_TENANT_ID: ${{ secrets.AAD_TENANT_ID }}
+          AAD_APPLICATION_ID_URI_SCOPES: ${{ secrets.AAD_APPLICATION_ID_URI_SCOPES }}
+          MSSQL_HOST: ${{ secrets.MSSQL_HOST }}
+          MSSQL_USER: ${{ secrets.MSSQL_USER }}
+          MSSQL_PASS: ${{ secrets.MSSQL_PASS }}
+          MSSQL_PORT: ${{ secrets.MSSQL_PORT }}
+          MSSQL_DATABASE: ${{ secrets.MSSQL_DATABASE }}
+          CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+          ADF_SUBSCRIPTION_ID: ${{ secrets.ADF_SUBSCRIPTION_ID }}
+          ADF_RESOURCE_GROUP: ${{ secrets.ADF_RESOURCE_GROUP }}
+          ADF_DATA_FACTORY: ${{ secrets.ADF_DATA_FACTORY }}
+          ADF_PIPELINE_NAME: ${{ secrets.ADF_PIPELINE_NAME }}
+        run: make deploy  # Run actual deployment and building step

@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  # Database (Microsoft SQL):
+  database:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    #user: root
+    container_name: database
+    environment:
+      - SA_PASSWORD=s15Iu5mnh1zT
+      - ACCEPT_EULA=Y
+    ports:
+      - "1433:1433"
+
+    # Healthcheck essentially creates a new DB and user
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P s15Iu5mnh1zT -d master -i /dbscripts/create-database-user.sql; /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P s15Iu5mnh1zT -d master -i /dbscripts/create-tables.sql"]
+      interval: 30s
+      retries: 1
+      start_period: 20s
+      timeout: 3s
+
+    volumes:
+      - ./infrastructure/database:/dbscripts
+
+  # Frontend:
+  frontend:
+    build:
+      dockerfile: infrastructure/frontend/Dockerfile
+      context: .
+    ports:
+      - "3000:3000"
+    # Run server:
+    # TODO: UNCOMMENT
+    #command: >
+    #  sh -c "npm start"
+    working_dir: /app/
+    volumes:
+      - ./front-end-src/data-access-request:/app
+
+  # Backend (public service at port 8081):
+  web_service:
+    build:
+      dockerfile: infrastructure/backend/Dockerfile
+      context: .
+    # Run server:
+    command: >
+      sh -c "uvicorn dataaccessrequest.main:service --reload --port 8081 --host 0.0.0.0"
+    working_dir: /src/
+    volumes:
+      - ./back-end-src:/src/
+    ports:
+      - "8081:8081"
+    depends_on:
+      - database
